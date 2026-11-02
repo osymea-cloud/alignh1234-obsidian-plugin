@@ -1,6 +1,6 @@
 {
-  "id": "alignh1234",
-  "name": "AlignH1234",
+  "id": "note-formatter",
+  "name": "Note Formatter",
   "version": "0.1.0",
 	"minAppVersion": "1.6.6",
   "description": "Arrange heading numbering, generate new headings, move images into folder, and insert blank lines. 整理标题序号，生成新标题，添加图片到文件夹内，插入空白行。",

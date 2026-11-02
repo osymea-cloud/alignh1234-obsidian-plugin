@@ -28,7 +28,7 @@ class PromptModal extends Modal {
     this.textarea = new TextAreaComponent(this.contentEl);
     this.textarea.setValue(this.options.value);
     this.textarea.inputEl.rows = this.options.rows ?? 8;
-    this.textarea.inputEl.addClass('alignh1234-prompt-textarea');
+    this.textarea.inputEl.addClass('note-formatter-prompt-textarea');
 
     new Setting(this.contentEl)
       .addButton((button) => button.setButtonText(this.options.cancelText).onClick(() => this.close()))

@@ -30,7 +30,7 @@
 ![move pictures](./doc/example_Organize_current_document_pic.gif)
 
 
-# AlignH1234 (Obsidian Plugin)
+# note-formatter (Obsidian Plugin)
 
 Organize the current Markdown document with one command: renumber H1-H4 headings, and, according to settings, complete code block languages, merge blank lines, add blank lines at the start and end of blockquotes, and manage horizontal rules. There are also two standalone commands: one calls AI to regenerate headings based on the body text (then automatically organizes the document), and the other inserts a batch of blank lines after the current paragraph.
 

@@ -444,7 +444,7 @@ export class H1RenumberSettingTab extends PluginSettingTab {
     });
 
     containerEl.createEl('p', {
-      cls: 'setting-item-description alignh1234-prompt-preview',
+      cls: 'setting-item-description note-formatter-prompt-preview',
       text: effective,
     });
 
