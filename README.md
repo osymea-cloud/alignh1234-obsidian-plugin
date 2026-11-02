@@ -2,32 +2,39 @@
 
 # Quick Start
 
+### Organize current document
 
-### “Organize current document”
+1. renumber H1-H4 headings
 
-**renumber H1-H4 headings**
+![renumber H1-H4 headings](./doc/1stage_title.gif)
 
-![renumber H1-H4 headings](./doc/example_Organize_current_document_head_Ii1.gif)
+![renumber H1-H4 headings2](./doc/4stage_title.gif)
 
-![renumber H1-H4 headings2](./doc/example_Organize_current_document_head_111.gif)
+2. complete code block languages
 
-**complete code block languages**
+![complete code block languages](./doc/code.gif)
 
-![complete code block languages](./doc/example_Organize_current_document_code.gif)
+3. merge blank lines
 
-**merge blank lines**
+![merge blank lines](./doc/deleteblank.gif)
 
-![merge blank lines](./doc/example_Organize_current_document_blank.gif)
+4. Insert horizontal rule
 
+![Insert horizontal rule](./doc/insertline.gif)
 
-### “Regenerate headings (AI)”
+### Regenerate headings (AI)
 
-![Regenerate headings (AI)](./doc/example_Organize_current_document_genhead.gif)
+![Regenerate headings (AI)](./doc/titlegen.gif)
 
+### Insert Blank Lines
+
+![Insert Blank Lines](./doc/insertblank.gif)
 
 ### Auto
 
-![move pictures](./doc/example_Organize_current_document_pic.gif)
+1. Move images to subfolder
+
+![Move images to subfolder](./doc/picture.gif)
 
 
 # note-formatter (Obsidian Plugin)
