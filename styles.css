@@ -1,0 +1,12 @@
+/* 提示词预览：保留换行、限高可滚动（settings.ts） */
+.alignh1234-prompt-preview {
+  white-space: pre-wrap;
+  max-height: 8em;
+  overflow-y: auto;
+}
+
+/* 提示词编辑弹窗的 textarea：占满宽度、允许纵向拉伸（promptModal.ts） */
+.alignh1234-prompt-textarea {
+  width: 100%;
+  resize: vertical;
+}
