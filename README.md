@@ -27,7 +27,7 @@
 
 ### Auto
 
-[move pictures](./doc/example_Organize_current_document_pic.gif)
+![move pictures](./doc/example_Organize_current_document_pic.gif)
 
 
 # AlignH1234 (Obsidian Plugin)
