@@ -7,22 +7,22 @@
 
 **renumber H1-H4 headings**
 
-[renumber H1-H4 headings](./doc/example_Organize_current_document_head_Ii1.gif)
+![renumber H1-H4 headings](./doc/example_Organize_current_document_head_Ii1.gif)
 
-[renumber H1-H4 headings2](./doc/example_Organize_current_document_head_111.gif)
+![renumber H1-H4 headings2](./doc/example_Organize_current_document_head_111.gif)
 
 **complete code block languages**
 
-[complete code block languages](./doc/example_Organize_current_document_code.gif)
+![complete code block languages](./doc/example_Organize_current_document_code.gif)
 
 **merge blank lines**
 
-[merge blank lines](./doc/example_Organize_current_document_blank.gif)
+![merge blank lines](./doc/example_Organize_current_document_blank.gif)
 
 
 ### “Regenerate headings (AI)”
 
-[Regenerate headings (AI)](./doc/example_Organize_current_document_genhead.gif)
+![Regenerate headings (AI)](./doc/example_Organize_current_document_genhead.gif)
 
 
 ### Auto
