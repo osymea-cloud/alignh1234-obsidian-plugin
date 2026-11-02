@@ -89,11 +89,11 @@ export type TranslationKey =
   | 'setting.title.prompt.reset'
   | 'setting.title.prompt.modalTitle'
   | 'setting.title.prompt.save'
-  | 'setting.title.prompt.emptyHint'
+  | 'setting.title.prompt.fallbackHint'
   | 'setting.title.themePrompt.name'
   | 'setting.title.themePrompt.desc'
   | 'setting.title.themePrompt.modalTitle'
-  | 'setting.title.themePrompt.emptyHint'
+  | 'setting.title.themePrompt.fallbackHint'
   | 'notice.invalidTitleSettings'
   | 'setting.llm.heading'
   | 'setting.llm.provider.name'
@@ -156,8 +156,8 @@ const DICT: Record<TranslationKey, TranslationEntry> = {
   },
   'setting.language.name': { zh: '界面语言', en: 'Language' },
   'setting.language.desc': {
-    zh: '仅影响设置页与命令/提示文案；设置页立即生效，命令名需重载插件后更新',
-    en: 'Affects the settings UI, command and notices; the settings page updates immediately, the command name after reloading the plugin',
+    zh: '影响设置页、命令名与提示文案；切换后立即生效（命令 ID 不变，已设置的热键保留）',
+    en: 'Affects the settings page, command names and notices; applies immediately (command IDs stay the same, so existing hotkeys are kept)',
   },
   'setting.language.zh': { zh: '中文', en: '中文' },
   'setting.language.en': { zh: 'English', en: 'English' },
@@ -278,8 +278,8 @@ const DICT: Record<TranslationKey, TranslationEntry> = {
   'setting.title.heading': { zh: 'AI 标题内容', en: 'AI heading content' },
   'setting.title.languageMode.name': { zh: '标题语言', en: 'Heading language' },
   'setting.title.languageMode.desc': {
-    zh: '跟随文档：由 AI 判断正文主要语言；指定语言：固定使用下方选择的语言。与界面语言无关。',
-    en: 'Follow document: the AI infers the main language of the body. Custom: always use the language selected below. Independent of the UI language.',
+    zh: '跟随文档：先按正文文字系统判定语言（中/英/日/韩/俄/阿，拉丁字母再按常用词细分西/法/德/葡/意），再要求 AI 用该语言生成；指定语言：固定使用下方选择的语言。与界面语言无关。',
+    en: 'Follow document: the body script is detected first (Chinese / English / Japanese / Korean / Russian / Arabic; Latin-script languages are split by common words), and the AI is required to use it. Custom: always use the language selected below. Independent of the UI language.',
   },
   'setting.title.languageMode.document': { zh: '跟随文档', en: 'Follow document' },
   'setting.title.languageMode.custom': { zh: '指定语言', en: 'Custom language' },
@@ -314,8 +314,8 @@ const DICT: Record<TranslationKey, TranslationEntry> = {
   },
   'setting.title.prompt.name': { zh: '标题生成提示词', en: 'Heading generation prompt' },
   'setting.title.prompt.desc': {
-    zh: '对「一句话总结」的生成要求；清空后按界面语言回退默认文案',
-    en: 'Requirements for the one-sentence summary; when empty, the default for the UI language is used',
+    zh: '对「一句话总结」的生成要求；清空后按当前界面语言取默认（避免提示词把标题语言带偏）',
+    en: 'Requirements for the one-sentence summary; when empty, the default for the current UI language is used (so the prompt cannot drag headings into another language)',
   },
   'setting.title.prompt.edit': { zh: '修改', en: 'Edit' },
   'setting.title.prompt.reset': { zh: '初始化', en: 'Reset' },
@@ -324,22 +324,22 @@ const DICT: Record<TranslationKey, TranslationEntry> = {
     en: 'Edit heading generation prompt',
   },
   'setting.title.prompt.save': { zh: '保存', en: 'Save' },
-  'setting.title.prompt.emptyHint': {
-    zh: '当前为空：生成时将按界面语言回退默认文案（上方为回退后的预览）',
-    en: 'Empty: the default for the UI language will be used at generation time (the preview above shows the fallback)',
+  'setting.title.prompt.fallbackHint': {
+    zh: '上方预览是本次生成实际生效的要求：内容为空，或仍是另一种界面语言的默认文案时，都按当前界面语言取默认',
+    en: 'The preview above is what generation will actually use: when the text is empty, or still the default of the other UI language, the default for the current UI language is used',
   },
   'setting.title.themePrompt.name': { zh: '主题生成提示词', en: 'Theme generation prompt' },
   'setting.title.themePrompt.desc': {
-    zh: '对「讨论主题」的生成要求；清空后按界面语言回退默认文案',
-    en: 'Requirements for the discussion topic; when empty, the default for the UI language is used',
+    zh: '对「讨论主题」的生成要求；清空后按当前界面语言取默认（避免提示词把标题语言带偏）',
+    en: 'Requirements for the discussion topic; when empty, the default for the current UI language is used (so the prompt cannot drag headings into another language)',
   },
   'setting.title.themePrompt.modalTitle': {
     zh: '修改主题生成提示词',
     en: 'Edit theme generation prompt',
   },
-  'setting.title.themePrompt.emptyHint': {
-    zh: '当前为空：生成时将按界面语言回退默认文案（上方为回退后的预览）',
-    en: 'Empty: the default for the UI language will be used at generation time (the preview above shows the fallback)',
+  'setting.title.themePrompt.fallbackHint': {
+    zh: '上方预览是本次生成实际生效的要求：内容为空，或仍是另一种界面语言的默认文案时，都按当前界面语言取默认',
+    en: 'The preview above is what generation will actually use: when the text is empty, or still the default of the other UI language, the default for the current UI language is used',
   },
   'notice.invalidTitleSettings': {
     zh: '标题设置错误：{levels} 的 emoji / 讨论主题 / 一句话总结至少开启一项',

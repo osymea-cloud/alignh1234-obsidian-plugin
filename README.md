@@ -1,8 +1,33 @@
-Here is the English version:
+[跳到中文](#中文说明)。 Here is the English version:
 
 # Quick Start
 
 
+### “Organize current document”
+
+**renumber H1-H4 headings**
+
+[renumber H1-H4 headings](./doc/example_Organize_current_document_head_Ii1.gif)
+
+[renumber H1-H4 headings2](./doc/example_Organize_current_document_head_111.gif)
+
+**complete code block languages**
+
+[complete code block languages](./doc/example_Organize_current_document_code.gif)
+
+**merge blank lines**
+
+[merge blank lines](./doc/example_Organize_current_document_blank.gif)
+
+
+### “Regenerate headings (AI)”
+
+[Regenerate headings (AI)](./doc/example_Organize_current_document_genhead.gif)
+
+
+### Auto
+
+[move pictures](./doc/example_Organize_current_document_pic.gif)
 
 
 # AlignH1234 (Obsidian Plugin)
@@ -15,7 +40,7 @@ Organize the current Markdown document with one command: renumber H1-H4 headings
 - Command “Regenerate headings (AI)”: generates “emoji discussion topic: one-sentence summary” based on each section’s body text
 - Command “Insert blank lines after this paragraph”: based on the paragraph where the cursor is, inserts N blank lines at the end of the paragraph (N is determined by settings, default 20)
 - Auto-organize inserted images (off by default): when the note is saved, move newly added image embeds on this page to `<note directory>/<image folder>/`, rewrite links, and delete the original image (move semantics); supports `![[...]]` and `![](...)`; creates the folder automatically if it is missing
-- UI language: Chinese / English (switches immediately on the settings page; command names take effect after reloading the plugin)
+- UI language: Chinese / English (switches immediately, including command names; command IDs stay the same, so hotkeys are kept)
 
 ### “Organize current document”
 
@@ -36,7 +61,7 @@ Organize the current Markdown document with one command: renumber H1-H4 headings
 
 | Setting | Default | Description |
 |---|---|---|
-| UI language | Chinese | Chinese / English; takes effect immediately on the settings page |
+| UI language | Chinese | Chinese / English; applies immediately to the settings page and command names (command IDs are unchanged, so hotkeys are kept) |
 | Numbering mode | Single-level | Single-level: each level numbered independently; Multi-level: `1 / 1.1 / 1.1.1 / 1.1.1.1` (fixed Arabic numerals + `.` + space; per-level styles/delimiters do not apply) |
 | Add space after delimiter | Off | When generating single-level numbering, add one space after the delimiter (automatically skipped for the “space” delimiter and Clear numbering) |
 | Numbering system (per level) | Chinese numerals | 12 systems + Clear numbering (does not apply in multi-level mode) |
@@ -50,10 +75,10 @@ Organize the current Markdown document with one command: renumber H1-H4 headings
 | Delete existing horizontal rules | Off | Delete `---` / `***` / `___`; preserve frontmatter and setext underlines |
 | Insert between two H1 headings | Off | Insert `---` before every non-first H1 |
 | Insert between two H2 headings | Off | Within each H1 group, insert `---` before the group’s non-first H2; if there is no H1, process the whole document |
-| Heading language | Follow document | Follow document (AI infers the main language of the body) / Specify language (11 languages: Chinese, English, Japanese, Korean, Spanish, French, German, Portuguese, Russian, Italian, Arabic) |
+| Heading language | Follow document | Follow document (the body script is detected first — Chinese / English / Japanese / Korean / Russian / Arabic, Latin-script languages are split by common words — and the AI is required to use it; if the sample is too short the AI infers it) / Specify language (11 languages: Chinese, English, Japanese, Korean, Spanish, French, German, Portuguese, Russian, Italian, Arabic) |
 | H1-H4 generated content | All on | emoji / discussion topic / one-sentence summary; at least one of the three; if all are off, the command reports an error and aborts |
-| Heading generation prompt | Chinese default text | Generation requirements for “one-sentence summary”; read-only preview + edit (modal) + reset; if cleared, falls back to default according to UI language |
-| Topic generation prompt | Chinese default text | Generation requirements for “discussion topic”; read-only preview + edit (modal) + reset; if cleared, falls back to default according to UI language |
+| Heading generation prompt | Chinese default text | Generation requirements for “one-sentence summary”; read-only preview + edit (modal) + reset; if cleared, the default for the current UI language is used (so does a stored default that belongs to the other UI language) |
+| Topic generation prompt | Chinese default text | Generation requirements for “discussion topic”; read-only preview + edit (modal) + reset; if cleared, the default for the current UI language is used (so does a stored default that belongs to the other UI language) |
 | AI provider | Claude | Six providers: Claude / DeepSeek / Gemini / GPT / Qwen / Kimi; each has a built-in default model |
 | API Key | Empty | Used only for “Regenerate headings”; displayed masked with `type=password`; can be cleared; saved in `data.json` |
 
@@ -71,7 +96,7 @@ Organize the current Markdown document with one command: renumber H1-H4 headings
 
 
 
-# AlignH1234（Obsidian 插件）
+# 中文说明
 
 用一个命令整理当前 Markdown 文档：重编号 H1-H4 标题，并按设置补全代码块语言、合并空行、为块引用补首尾空行、管理分割线；另有两个独立命令，分别用于调用 AI 按正文重新生成标题（随后自动整理）、在当前段落之后插入一批空白行。
 
@@ -81,7 +106,7 @@ Organize the current Markdown document with one command: renumber H1-H4 headings
 - 命令「重新生成标题（AI）」：按每节正文生成「emoji 讨论主题：一句话总结」
 - 命令「在本段后插入空白行」：以光标所在段落为准，在段末插入 N 个空白行（N 由设置决定，默认 20）
 - 自动整理插入图片（默认关）：笔记保存时把本页新增的图片嵌入移动到 `<笔记目录>/<图片文件夹>/`，改写链接并删除原图（移动语义）；支持 `![[...]]` 与 `![](...)`，文件夹缺失时自动新建
-- 界面语言：中文 / English（设置页即时切换；命令名重载插件后生效）
+- 界面语言：中文 / English（设置页即时切换，命令名同步更新；命令 ID 不变，已设置的热键保留）
 
 ### 「整理当前文档」
 
@@ -104,7 +129,7 @@ Organize the current Markdown document with one command: renumber H1-H4 headings
 
 | 设置项 | 默认值 | 说明 |
 |---|---|---|
-| 界面语言 | 中文 | 中文 / English；设置页即时生效 |
+| 界面语言 | 中文 | 中文 / English；设置页与命令名即时生效（命令 ID 不变，热键保留） |
 | 编号模式 | 单级 | 单级：每级独立编号；多级：`1 / 1.1 / 1.1.1 / 1.1.1.1`（固定阿拉伯 + `.` + 空格，各级风格/分隔符不生效） |
 | 分隔符后补空格 | 关 | 单级编号生成时在分隔符后加一个空格（「空格」分隔符、清除编号自动跳过） |
 | 编号体系（每级） | 中文数字 | 12 种体系 + 清除编号（多级模式不生效） |
@@ -118,10 +143,10 @@ Organize the current Markdown document with one command: renumber H1-H4 headings
 | 删除现有分割线 | 关 | 删除 `---` / `***` / `___`，保留 frontmatter 与 setext 下划线 |
 | 两个一级标题之间插入 | 关 | 在每个非首个 H1 之前插入 `---` |
 | 两个二级标题之间插入 | 关 | 每个 H1 分组内、该组非首个 H2 之前插入 `---`；无 H1 时按全文处理 |
-| 标题语言 | 跟随文档 | 跟随文档（AI 推断正文主要语言）/ 指定语言（11 种：中英日韩西法德葡俄意阿） |
+| 标题语言 | 跟随文档 | 跟随文档（先按正文文字系统判定语言——中/英/日/韩/俄/阿，拉丁字母再按常用词细分西/法/德/葡/意——再要求 AI 用该语言生成；样本太短时交给 AI 判断）/ 指定语言（11 种：中英日韩西法德葡俄意阿） |
 | H1-H4 生成内容 | 全开 | emoji / 讨论主题 / 一句话总结，三项至少一项；全关时命令报错并中止 |
-| 标题生成提示词 | 中文默认文案 | 对「一句话总结」的生成要求；只读预览 + 修改（弹窗）+ 初始化；清空后按界面语言回退默认 |
-| 主题生成提示词 | 中文默认文案 | 对「讨论主题」的生成要求；只读预览 + 修改（弹窗）+ 初始化；清空后按界面语言回退默认 |
+| 标题生成提示词 | 中文默认文案 | 对「一句话总结」的生成要求；只读预览 + 修改（弹窗）+ 初始化；清空后按当前界面语言取默认（存的是另一种界面语言的默认文案时同样按当前语言取默认） |
+| 主题生成提示词 | 中文默认文案 | 对「讨论主题」的生成要求；只读预览 + 修改（弹窗）+ 初始化；清空后按当前界面语言取默认（存的是另一种界面语言的默认文案时同样按当前语言取默认） |
 | AI 服务商 | Claude | 六家：Claude / DeepSeek / Gemini / GPT / Qwen / Kimi；每家内置默认模型 |
 | API Key | 空 | 仅用于「重新生成标题」；`type=password` 掩码显示，可清除；保存在 `data.json` |
 

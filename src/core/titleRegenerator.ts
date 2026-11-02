@@ -4,13 +4,15 @@ import type {
   TitleLevelConfig,
   TitleSettings,
 } from '../types.ts';
-import { HEADING_LEVELS, defaultGenerationPrompt, defaultThemePrompt } from '../types.ts';
+import { HEADING_LEVELS, resolveGenerationPrompt, resolveThemePrompt } from '../types.ts';
 import { scanHeadings, splitLines } from './documentScanner.ts';
 import { classifyLines } from './markdownState.ts';
 import { EMOJI_PREFIX_RE, parseHeading } from './headingParser.ts';
 import { getAllNumberSystems } from './numberSystems/index.ts';
 import { getRecognitionDelimiters } from './delimiters.ts';
 import { getTitleLanguage } from './titleLanguage.ts';
+import type { TitleLanguage } from './titleLanguage.ts';
+import { detectTextLanguage } from './textLanguage.ts';
 
 /** 每节正文发给 LLM 的最大字符数（超长文档兜底） */
 export const MAX_SECTION_BODY_CHARS = 1600;
@@ -126,32 +128,78 @@ function levelFields(level: HeadingLevel, config: TitleLevelConfig, isZh: boolea
   return `H${level}${isZh ? '：' : ': '}${fields.join(isZh ? '、' : ', ')}`;
 }
 
-/** 标题语言指令：document 由模型推断，custom 固定语言 */
-function languageDirective(title: TitleSettings, isZh: boolean): string {
-  if (title.languageMode === 'custom') {
-    const language = getTitleLanguage(title.customLanguage);
+/** 语言名：中文界面「中文名（English）」，英文界面只用英文名 */
+function languageName(language: TitleLanguage, isZh: boolean): string {
+  return isZh ? `${language.nameZh}（${language.promptName}）` : language.promptName;
+}
+
+/** 语言识别样本：标题 + 各节正文（正文已按节截断，足够判定语言） */
+function outlineSample(outline: HeadingNode[]): string {
+  return outline.map((node) => `${node.title}\n${node.body}`).join('\n');
+}
+
+/**
+ * 主题长度建议：按**输出语言**给单位，避免给英文正文套「不超过 7 个汉字」。
+ * 判定不出输出语言时只要求简短，不写具体单位。
+ */
+function themeLengthHint(outputLanguage: TitleLanguage | null, isZh: boolean): string {
+  if (!outputLanguage) return isZh ? '尽量简短' : 'keep it concise';
+  const cjk = outputLanguage.id === 'zh' || outputLanguage.id === 'ja';
+  if (isZh) return cjk ? '尽量不超过 7 个汉字' : '尽量不超过 7 个单词';
+  return cjk ? 'ideally no more than 7 characters' : 'ideally no more than 7 words';
+}
+
+/**
+ * 标题输出语言：
+ * - custom：使用指定语言；
+ * - document：按正文文字系统判定（中/英/日/韩/俄/阿，拉丁字母再按高频词细分西/法/德/葡/意）；
+ *   判定不出来返回 null，交回模型自行判断。
+ */
+export function resolveOutputLanguage(
+  title: TitleSettings,
+  outline: HeadingNode[],
+): TitleLanguage | null {
+  if (title.languageMode === 'custom') return getTitleLanguage(title.customLanguage);
+  const detected = detectTextLanguage(outlineSample(outline));
+  return detected ? getTitleLanguage(detected) : null;
+}
+
+/** 标题语言指令：能判定出语言时写死结论，避免模型按提示词语言作答 */
+function languageDirective(
+  title: TitleSettings,
+  outputLanguage: TitleLanguage | null,
+  isZh: boolean,
+): string {
+  if (!outputLanguage) {
     return isZh
-      ? `使用${language.nameZh}（${language.promptName}）输出 theme 与 summary`
-      : `Write theme and summary in ${language.promptName}`;
+      ? '使用文档正文主要使用的语言输出 theme 与 summary（自动判断，无需询问）'
+      : 'Write theme and summary in the language primarily used by the document body (infer it automatically)';
+  }
+
+  const name = languageName(outputLanguage, isZh);
+  if (title.languageMode === 'custom') {
+    return isZh ? `使用${name}输出 theme 与 summary` : `Write theme and summary in ${name}`;
   }
   return isZh
-    ? '使用文档正文主要使用的语言输出 theme 与 summary（自动判断，无需询问）'
-    : 'Write theme and summary in the language primarily used by the document body (infer it automatically)';
+    ? `使用${name}输出 theme 与 summary；该语言已按正文判定，必须与正文一致，不要换成提示词本身的语言`
+    : `Write theme and summary in ${name}; the body is written in ${outputLanguage.promptName}, so do not answer in the language of these instructions`;
 }
 
-/** 「一句话总结」的生成要求（空 → 按界面语言回退默认） */
+/** 「一句话总结」的生成要求（空 / 另一语言默认 → 按界面语言回退默认） */
 function summaryRequirement(settings: TitlePromptSettings): string {
-  const custom = settings.title.generationPrompt.trim();
-  return custom || defaultGenerationPrompt(settings.language);
+  return resolveGenerationPrompt(settings.title.generationPrompt, settings.language);
 }
 
-/** 「讨论主题」的生成要求（空 → 按界面语言回退默认） */
+/** 「讨论主题」的生成要求（空 / 另一语言默认 → 按界面语言回退默认） */
 function themeRequirement(settings: TitlePromptSettings): string {
-  const custom = settings.title.themePrompt.trim();
-  return custom || defaultThemePrompt(settings.language);
+  return resolveThemePrompt(settings.title.themePrompt, settings.language);
 }
 
-function zhInstructions(outline: HeadingNode[], settings: TitlePromptSettings): string {
+function zhInstructions(
+  outline: HeadingNode[],
+  settings: TitlePromptSettings,
+  outputLanguage: TitleLanguage | null,
+): string {
   const levels = HEADING_LEVELS.map((level) =>
     `- ${levelFields(level, settings.title.levels[level], true)}`,
   ).join('\n');
@@ -162,16 +210,20 @@ function zhInstructions(outline: HeadingNode[], settings: TitlePromptSettings): 
     `1. 只输出一个 JSON 数组，元素数量必须等于 ${outline.length}，顺序与输入一致；每个元素形如 {"emoji":"…","theme":"…","summary":"…"}，不要输出解释或代码围栏。`,
     '2. 按标题级别决定输出字段；未启用的字段返回空字符串 ""：',
     levels,
-    `3. theme 为「讨论主题」：${themeRequirement(settings)}（尽量不超过 7 个汉字；不要加编号或冒号前缀）。`,
+    `3. theme 为「讨论主题」：${themeRequirement(settings)}（${themeLengthHint(outputLanguage, true)}；不要加编号或冒号前缀）。`,
     `4. summary 为「一句话总结」：${summaryRequirement(settings)}（遵循上述要求；不要包含冒号前缀）。`,
     '5. emoji：有趣、与正文内容相关、尽量丰富多样（关键要求）；只放一个 emoji，不要文字。',
-    `6. 语言：${languageDirective(settings.title, true)}。`,
+    `6. 语言：${languageDirective(settings.title, outputLanguage, true)}。`,
     '7. 父标题不要赘述子标题已经总结的内容，侧重说明多个子标题之间的区别与整体概括；子标题专注自身，不要重复父标题。',
     '8. 目标是让标题本身构成文档大纲，正文只作为补充。',
   ].join('\n');
 }
 
-function enInstructions(outline: HeadingNode[], settings: TitlePromptSettings): string {
+function enInstructions(
+  outline: HeadingNode[],
+  settings: TitlePromptSettings,
+  outputLanguage: TitleLanguage | null,
+): string {
   const levels = HEADING_LEVELS.map((level) =>
     `- ${levelFields(level, settings.title.levels[level], false)}`,
   ).join('\n');
@@ -182,10 +234,10 @@ function enInstructions(outline: HeadingNode[], settings: TitlePromptSettings): 
     `1. Output only a JSON array with exactly ${outline.length} elements in input order; each element looks like {"emoji":"…","theme":"…","summary":"…"}. No explanations or code fences.`,
     '2. Emit fields according to the heading level; return "" for disabled fields:',
     levels,
-    `3. theme is the discussion topic: ${themeRequirement(settings)} (ideally no more than 7 words; do not prefix it with a number or colon).`,
+    `3. theme is the discussion topic: ${themeRequirement(settings)} (${themeLengthHint(outputLanguage, false)}; do not prefix it with a number or colon).`,
     `4. summary is the one-sentence summary: ${summaryRequirement(settings)} (follow the requirement above; do not prefix it with a colon).`,
     '5. emoji: fun, relevant to the body, and varied (key requirement); exactly one emoji, no text.',
-    `6. Language: ${languageDirective(settings.title, false)}.`,
+    `6. Language: ${languageDirective(settings.title, outputLanguage, false)}.`,
     '7. A parent heading must not repeat what its child headings already summarize; focus on the differences between child sections and the overall picture. Child headings should focus on their own content and not repeat the parent.',
     '8. The headings themselves should form the document outline; body text is supplementary.',
   ].join('\n');
@@ -197,8 +249,12 @@ function enInstructions(outline: HeadingNode[], settings: TitlePromptSettings): 
  */
 export function buildPrompt(outline: HeadingNode[], settings: TitlePromptSettings): string {
   const isZh = settings.language === 'zh';
+  // 先按正文判定输出语言，再写进 prompt；判定不出来才退回「让模型自己判断」
+  const outputLanguage = resolveOutputLanguage(settings.title, outline);
   const parts: string[] = [
-    isZh ? zhInstructions(outline, settings) : enInstructions(outline, settings),
+    isZh
+      ? zhInstructions(outline, settings, outputLanguage)
+      : enInstructions(outline, settings, outputLanguage),
   ];
 
   parts.push(
@@ -215,11 +271,16 @@ export function buildPrompt(outline: HeadingNode[], settings: TitlePromptSetting
     parts.push(`${header}\n${bodyLabel}\n${body}`);
   });
 
-  parts.push(
-    isZh
-      ? `请只返回长度为 ${outline.length} 的 JSON 数组，元素为 {"emoji","theme","summary"} 对象。`
-      : `Return only a JSON array of ${outline.length} objects with keys "emoji", "theme" and "summary".`,
-  );
+  const closing = isZh
+    ? `请只返回长度为 ${outline.length} 的 JSON 数组，元素为 {"emoji","theme","summary"} 对象。`
+    : `Return only a JSON array of ${outline.length} objects with keys "emoji", "theme" and "summary".`;
+  const languageReminder = outputLanguage
+    ? isZh
+      ? `theme 与 summary 必须使用${languageName(outputLanguage, true)}。`
+      : `Write theme and summary in ${languageName(outputLanguage, false)}.`
+    : '';
+
+  parts.push(languageReminder ? `${closing}\n${languageReminder}` : closing);
 
   return parts.join('\n\n');
 }
@@ -421,8 +482,15 @@ export function normalizeEmoji(raw: string): string {
  * - emoji 后恰好一个空格；
  * - 冒号只在 theme 非空时出现；
  * - 结果 trim；空串表示不覆盖。
+ *
+ * `summarySeparator` 由标题语言决定：中日文用全角「：」，其他语言用「: 」，
+ * 避免英文标题里出现中文冒号。
  */
-export function composeTitle(config: TitleLevelConfig, item: GeneratedTitle): string {
+export function composeTitle(
+  config: TitleLevelConfig,
+  item: GeneratedTitle,
+  summarySeparator = '：',
+): string {
   const emoji = config.includeEmoji ? normalizeEmoji(item.emoji) : '';
   const theme = config.includeTheme ? cleanField(item.theme).replace(/[：:]\s*$/, '').trim() : '';
   const summary = config.includeSummary
@@ -432,8 +500,14 @@ export function composeTitle(config: TitleLevelConfig, item: GeneratedTitle): st
   let title = '';
   if (emoji) title += `${emoji} `;
   if (theme) title += theme;
-  if (summary) title += `${theme ? '：' : ''}${summary}`;
+  if (summary) title += `${theme ? summarySeparator : ''}${summary}`;
   return title.trim();
+}
+
+/** 主题与总结之间的分隔符：中文/日文用全角「：」，其他语言用「: 」；判定不出语言时保持旧行为 */
+function summarySeparatorFor(language: TitleLanguage | null): string {
+  if (!language) return '：';
+  return language.id === 'zh' || language.id === 'ja' ? '：' : ': ';
 }
 
 /**
@@ -448,6 +522,7 @@ export function applyTitles(
 ): TitleApplyResult {
   const usesCrlf = text.includes('\r\n');
   const lines = splitLines(text);
+  const separator = summarySeparatorFor(resolveOutputLanguage(title, outline));
   let changedCount = 0;
 
   for (let i = 0; i < outline.length; i += 1) {
@@ -457,7 +532,7 @@ export function applyTitles(
     const item = titles[i];
     if (!item) continue;
 
-    const composed = composeTitle(title.levels[node.level], item);
+    const composed = composeTitle(title.levels[node.level], item, separator);
     if (!composed) continue;
 
     const newLine = `${node.prefix}${composed}`;

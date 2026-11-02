@@ -322,6 +322,50 @@ export function defaultThemePrompt(lang: PluginLanguage): string {
   return lang === 'en' ? DEFAULT_THEME_PROMPT_EN : DEFAULT_THEME_PROMPT_ZH;
 }
 
+/** 是否为任一版本的默认「一句话总结」文案（含历史默认） */
+function isDefaultGenerationPrompt(value: string): boolean {
+  return (
+    value === DEFAULT_GENERATION_PROMPT_ZH ||
+    value === DEFAULT_GENERATION_PROMPT_EN ||
+    LEGACY_GENERATION_PROMPTS.has(value)
+  );
+}
+
+/** 是否为任一版本的默认「讨论主题」文案（含历史默认） */
+function isDefaultThemePrompt(value: string): boolean {
+  return (
+    value === DEFAULT_THEME_PROMPT_ZH ||
+    value === DEFAULT_THEME_PROMPT_EN ||
+    LEGACY_THEME_PROMPTS.has(value)
+  );
+}
+
+/**
+ * 「一句话总结」实际生效的生成要求。
+ * - 空 → 当前界面语言默认文案；
+ * - 存的是默认文案但属于另一种界面语言（旧版按默认语言 zh 写入 data.json）→ 换成当前界面语言默认，
+ *   否则「不超过 20 个字」这类措辞会把生成结果带成中文，与正文语言不一致；
+ * - 用户自定义文案原样使用。
+ */
+export function resolveGenerationPrompt(value: string, lang: PluginLanguage): string {
+  const prompt = value.trim();
+  if (!prompt) return defaultGenerationPrompt(lang);
+  if (prompt !== defaultGenerationPrompt(lang) && isDefaultGenerationPrompt(prompt)) {
+    return defaultGenerationPrompt(lang);
+  }
+  return value;
+}
+
+/** 「讨论主题」实际生效的生成要求（规则同 resolveGenerationPrompt） */
+export function resolveThemePrompt(value: string, lang: PluginLanguage): string {
+  const prompt = value.trim();
+  if (!prompt) return defaultThemePrompt(lang);
+  if (prompt !== defaultThemePrompt(lang) && isDefaultThemePrompt(prompt)) {
+    return defaultThemePrompt(lang);
+  }
+  return value;
+}
+
 /** 单个级别的默认生成内容：emoji / 主题 / 总结全开 */
 export const DEFAULT_TITLE_LEVEL: TitleLevelConfig = {
   includeEmoji: true,

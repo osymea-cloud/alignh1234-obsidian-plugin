@@ -1,5 +1,5 @@
 import { Notice, Plugin, TFile, requestUrl } from 'obsidian';
-import type { Editor } from 'obsidian';
+import type { Command, Editor } from 'obsidian';
 import { createDefaultSettings, normalizeSettings } from './src/types.ts';
 import type { H1RenumberSettings, PluginLanguage } from './src/types.ts';
 import { organizeText } from './src/core/organizer.ts';
@@ -9,6 +9,7 @@ import { collectImageEmbeds, isImagePath, rewriteImageEmbeds } from './src/core/
 import { applyDocumentText } from './src/editor/applyEdit.ts';
 import { H1RenumberSettingTab } from './src/settings.ts';
 import { t } from './src/i18n.ts';
+import type { TranslationKey } from './src/i18n.ts';
 import { chat } from './src/core/llm/client.ts';
 import type { LlmRequestFn } from './src/core/llm/client.ts';
 import { getLlmProvider } from './src/core/llm/providers.ts';
@@ -27,8 +28,33 @@ const requestToObsidian: LlmRequestFn = async ({ url, method, headers, body }) =
   return { status: response.status, text: response.text };
 };
 
+/** 命令 id（不含插件前缀）。热键按完整 id 保存，切换语言时只改名，不会丢热键 */
+const COMMAND_IDS = {
+  organize: 'organize-current-document',
+  regenerateTitles: 'regenerate-headings',
+  insertBlankLines: 'insert-blank-lines',
+} as const;
+
+type CommandKey = keyof typeof COMMAND_IDS;
+
+/** 每个命令名对应的文案 key */
+const COMMAND_NAME_KEYS: Record<CommandKey, TranslationKey> = {
+  organize: 'command.organize',
+  regenerateTitles: 'command.regenerateTitles',
+  insertBlankLines: 'command.insertBlankLines',
+};
+
 export default class H1RenumberPlugin extends Plugin {
   override settings: H1RenumberSettings = createDefaultSettings();
+
+  /** 已注册命令的引用：切换界面语言时就地改名（见 refreshCommandNames） */
+  private readonly commands = new Map<CommandKey, Command>();
+
+  /**
+   * 每个命令名的前缀（通常是 `addCommand` 加上的「插件名: 」）。
+   * 注册时按 Obsidian 实际写回的 name 反推，避免不同版本重复拼接插件名。
+   */
+  private readonly commandPrefixes = new Map<CommandKey, string>();
 
   /** 图片嵌入基线：笔记路径 → 上次见到（或刚写完）的嵌入目标 */
   private readonly embedCache = new Map<string, string[]>();
@@ -40,24 +66,7 @@ export default class H1RenumberPlugin extends Plugin {
     await this.loadSettings();
     this.addSettingTab(new H1RenumberSettingTab(this.app, this));
 
-    const lang = this.settings.language;
-    this.addCommand({
-      id: 'organize-current-document',
-      name: t('command.organize', lang),
-      editorCallback: (editor) => this.organizeDocument(editor),
-    });
-
-    this.addCommand({
-      id: 'regenerate-headings',
-      name: t('command.regenerateTitles', lang),
-      editorCallback: (editor) => this.regenerateHeadings(editor),
-    });
-
-    this.addCommand({
-      id: 'insert-blank-lines',
-      name: t('command.insertBlankLines', lang),
-      editorCallback: (editor) => this.insertBlankLines(editor),
-    });
+    this.registerCommands();
 
     // 图片自动整理：先建立基线（打开笔记 / 启动后当前笔记），再对后续保存做增量
     this.registerEvent(
@@ -74,6 +83,51 @@ export default class H1RenumberPlugin extends Plugin {
         void this.tidyImages(file);
       }),
     );
+  }
+
+  /** 注册三个命令；命令名只能取一次文案，切换语言后由 refreshCommandNames 更新 */
+  private registerCommands(): void {
+    this.registerCommand('organize', {
+      editorCallback: (editor) => this.organizeDocument(editor),
+    });
+    this.registerCommand('regenerateTitles', {
+      editorCallback: (editor) => this.regenerateHeadings(editor),
+    });
+    this.registerCommand('insertBlankLines', {
+      editorCallback: (editor) => this.insertBlankLines(editor),
+    });
+  }
+
+  /**
+   * 注册单个命令，并记下 Obsidian 给 name 加的前缀。
+   *
+   * `addCommand` 会返回注册后的同一个对象，且部分版本会把 name 改写成
+   * 「插件名: 命令名」；因此这里用实际写回的 name 反推前缀，后续改名时补回。
+   */
+  private registerCommand(key: CommandKey, spec: Omit<Command, 'id' | 'name'>): void {
+    const label = t(COMMAND_NAME_KEYS[key], this.settings.language);
+    const command = this.addCommand({ ...spec, id: COMMAND_IDS[key], name: label });
+    this.commands.set(key, command);
+    this.commandPrefixes.set(
+      key,
+      command.name.endsWith(label)
+        ? command.name.slice(0, command.name.length - label.length)
+        : '',
+    );
+  }
+
+  /**
+   * 界面语言变化后同步命令名（否则命令面板里仍是切换前的语言）。
+   *
+   * 命令面板每次打开都会重新读取 `command.name`，所以就地改名即可；
+   * 命令 id 不变，用户绑定的热键不会丢。
+   * 不用 removeCommand + 重新注册：那是 Obsidian 1.7.2+ 的 API，而本插件 minAppVersion 是 1.6.6。
+   */
+  refreshCommandNames(): void {
+    const lang = this.settings.language;
+    for (const [key, command] of this.commands) {
+      command.name = `${this.commandPrefixes.get(key) ?? ''}${t(COMMAND_NAME_KEYS[key], lang)}`;
+    }
   }
 
   /** 整理结果 → Notice 片段（省略计数为 0 的动作） */

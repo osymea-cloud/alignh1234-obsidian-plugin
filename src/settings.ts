@@ -14,6 +14,8 @@ import {
   clampInsertBlankLines,
   defaultGenerationPrompt,
   defaultThemePrompt,
+  resolveGenerationPrompt,
+  resolveThemePrompt,
   sanitizeImageFolder,
 } from './types.ts';
 import type {
@@ -90,6 +92,8 @@ export class H1RenumberSettingTab extends PluginSettingTab {
         dropdown.onChange(async (value) => {
           this.plugin.settings.language = value as PluginLanguage;
           await this.plugin.saveSettings();
+          // 命令名不会随设置页重渲染，必须显式同步，否则命令面板仍是旧语言
+          this.plugin.refreshCommandNames();
           this.display();
         });
       });
@@ -399,17 +403,20 @@ export class H1RenumberSettingTab extends PluginSettingTab {
     containerEl: HTMLElement,
     lang: PluginLanguage,
     options: {
+      /** 保存的原始文案（空串表示用默认） */
       value: string;
-      fallback: string;
+      /** 实际生效文案（空 / 另一界面语言的默认值已按当前语言解析） */
+      effective: string;
       name: string;
       desc: string;
       modalTitle: string;
-      emptyHint: string;
+      /** 预览的文案与实际生效文案不同（空 / 另一界面语言的默认值）时展示的提示 */
+      fallbackHint: string;
       onChange: (value: string) => Promise<void>;
       onReset: () => Promise<void>;
     },
   ): void {
-    const effective = options.value.trim() || options.fallback;
+    const effective = options.effective;
 
     const setting = new Setting(containerEl).setName(options.name).setDesc(options.desc);
 
@@ -441,9 +448,10 @@ export class H1RenumberSettingTab extends PluginSettingTab {
       text: effective,
     });
 
-    if (!options.value.trim()) {
+    // 存的文案没被直接采用（空 / 另一种界面语言的默认值）时说明预览来自哪里
+    if (options.value.trim() !== effective) {
       containerEl.createEl('p', {
-        text: options.emptyHint,
+        text: options.fallbackHint,
         cls: 'setting-item-description mod-warning',
       });
     }
@@ -457,11 +465,11 @@ export class H1RenumberSettingTab extends PluginSettingTab {
   ): void {
     this.renderPromptSetting(containerEl, lang, {
       value: title.generationPrompt,
-      fallback: defaultGenerationPrompt(lang),
+      effective: resolveGenerationPrompt(title.generationPrompt, lang),
       name: t('setting.title.prompt.name', lang),
       desc: t('setting.title.prompt.desc', lang),
       modalTitle: t('setting.title.prompt.modalTitle', lang),
-      emptyHint: t('setting.title.prompt.emptyHint', lang),
+      fallbackHint: t('setting.title.prompt.fallbackHint', lang),
       onChange: async (value) => {
         this.plugin.settings.title.generationPrompt = value;
         await this.plugin.saveSettings();
@@ -474,11 +482,11 @@ export class H1RenumberSettingTab extends PluginSettingTab {
 
     this.renderPromptSetting(containerEl, lang, {
       value: title.themePrompt,
-      fallback: defaultThemePrompt(lang),
+      effective: resolveThemePrompt(title.themePrompt, lang),
       name: t('setting.title.themePrompt.name', lang),
       desc: t('setting.title.themePrompt.desc', lang),
       modalTitle: t('setting.title.themePrompt.modalTitle', lang),
-      emptyHint: t('setting.title.themePrompt.emptyHint', lang),
+      fallbackHint: t('setting.title.themePrompt.fallbackHint', lang),
       onChange: async (value) => {
         this.plugin.settings.title.themePrompt = value;
         await this.plugin.saveSettings();
